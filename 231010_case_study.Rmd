@@ -4,9 +4,11 @@ author: "Derek Lamb"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-```{r preferences}
+```{r packages & preferences, message = FALSE}
 library(tidyverse)
 library(knitr)
+library(ggridges)
+library(leaflet)
 
 opts_chunk$set(
   fig.width = 6,
@@ -49,4 +51,152 @@ df_airbnb <- nyc_airbnb |>
 - Where are AirBNBs?
   - Borough? Neighborhood?
   -Lat and long?
+
+```{r}
+df_airbnb |> 
+  drop_na(stars) |> 
+  ggplot(aes(x = neighbourhood, y = stars)) +
+  geom_jitter() +
+  facet_grid(borough ~ .)
+```
+
+```{r}
+df_airbnb |> 
+  drop_na(stars) |> 
+  group_by(neighbourhood) |> 
+  summarize(med_rating = median(stars)) |> 
+  arrange(med_rating) |> 
+  head()
+
+df_airbnb |> 
+  drop_na(stars) |> 
+  group_by(neighbourhood) |> 
+  summarize(med_rating = median(stars)) |> 
+  arrange(med_rating) |> 
+  tail()
+
+```
+
+Edgemere has the lowest median rating, 3.5 stars. This is followed by Hunts Point, Morrisania, and Port Richmond, which all have a median rating of 3.75 stars.
+
+```{r avg borough}
+df_airbnb |> 
+  drop_na(stars) |> 
+  group_by(borough) |> 
+  summarize(mean_rating = mean(stars)) |> 
+  arrange(mean_rating)
+```
+
+Manhattan has the highest average rating with a mean rating of 4.79 stars, while the Bronx has the lowest average rating of 4.44 stars.
+
+```{r number stays per borough}
+df_airbnb |> 
+  drop_na(stars) |> 
+  group_by(borough) |> 
+  summarize(n_stays = n()) |> 
+  arrange(n_stays)
+```
+
+Staten Island has the fewest airbnb stays with only 186, while Manhattan has the most at 14,541. ** Dropped NA*
+
+
+## Do some EDA
+
+```{r}
+df_airbnb |> 
+  count(borough)
+```
+
+```{r mean price borough}
+df_airbnb |> 
+  group_by(borough, room_type) |> 
+  summarize(median_price = median(price)) |> 
+  pivot_wider(
+      names_from = room_type,
+      values_from = median_price
+  )
+```
+
+```{r}
+df_airbnb |> 
+  filter(price < 1000, room_type == "Entire home/apt") |> 
+  ggplot(aes(x = price)) +
+  geom_histogram() + 
+  facet_grid(.~borough)
+```
+
+
+```{r}
+df_airbnb |> 
+  filter(price >= 9500) |> 
+  view()
+```
+
+```{r manhattan apts}
+df_airbnb |> 
+  filter(
+    price < 1000, 
+    room_type == "Entire home/apt",
+    borough == "Manhattan") |> 
+  group_by(neighbourhood) |> 
+  summarize(
+    n_apt = n(),
+    mean_price = mean(price)) |> 
+  arrange((mean_price))
+```
+
+```{r}
+df_airbnb |> 
+  filter(
+    price < 1000, 
+    room_type == "Entire home/apt",
+    borough == "Manhattan") |>
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) |> 
+  ggplot(aes(x = price, y = neighbourhood, fill = neighbourhood)) +
+  geom_density_ridges() + 
+  labs(
+    title = "Manhattan AirBNB price by neighborhood",
+    x = "Price ($)",
+    y = "Neighborhood"
+  ) +
+  theme(legend.position = "none")
+
+ggsave("manhattan_airbnb.png")
+```
+
+```{r}
+
+df_airbnb |> 
+  filter(
+    price < 1000, 
+    room_type == "Entire home/apt",
+    borough == "Manhattan") |> 
+  ggplot(aes(x = lat, y = long, color = price)) +
+  geom_point()
+```
+
+## Try something else - leaflet
+
+```{r}
+df_airbnb |> 
+  filter(price < 1000, 
+    room_type == "Entire home/apt",
+    borough == "Manhattan") |> 
+  sample_n(500) |> 
+  leaflet() |> 
+  addProviderTiles(providers$CartoDB.Positron) |> 
+  addCircleMarkers(~lat, ~long, radius = 0.5)
+```
+
+
+```{r}
+df_airbnb |> 
+  filter(price < 1000, 
+    room_type == "Entire home/apt",
+    borough == "Queens") |> 
+  sample_n(500) |> 
+  leaflet() |> 
+  addProviderTiles(providers$CartoDB.Positron) |> 
+  addCircleMarkers(~lat, ~long, radius = 0.5)
+```
 
