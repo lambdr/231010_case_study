@@ -200,3 +200,5 @@ df_airbnb |>
   addCircleMarkers(~lat, ~long, radius = 0.5)
 ```
 
+### Checking tokens
+My git token changed, im going to see what happens if i try to push this file
