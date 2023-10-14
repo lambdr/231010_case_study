@@ -201,4 +201,8 @@ df_airbnb |>
 ```
 
 ### Checking tokens
-My git token changed, im going to see what happens if i try to push this file
+My git token changed, im going to see what happens if i try to push this file.
+
+Commiting work, but pushing failed: 'Fatal Error'.
+
+Now I have made a new PAT and added it in R with `gitcreds::gitcreds_set()`. I'll try again.
